@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+./gradlew --quiet ":installDist" && "./build/install/kanjitomo2anki/bin/kanjitomo2anki" "$@"
