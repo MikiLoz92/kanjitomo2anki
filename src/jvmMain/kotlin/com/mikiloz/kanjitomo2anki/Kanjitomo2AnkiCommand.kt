@@ -6,6 +6,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
 import com.mikiloz.kanjitomo2anki.anki.AnkiClient
+import com.mikiloz.kanjitomo2anki.anki.AnkiModel
 import com.mikiloz.kanjitomo2anki.anki.AnkiNote
 import com.mikiloz.kanjitomo2anki.anki.exception.AnkiException
 import com.mikiloz.kanjitomo2anki.parse.VocabularyFileParser
@@ -24,9 +25,15 @@ class Kanjitomo2AnkiCommand : CliktCommand() {
     """.trimIndent()
 
     val userDeckName by option("-d", "--deckName", help = "The name of the deck that will be created on Anki.")
-    val ankiConnectHost by option("-h", "--host", help = "The hostname where AnkiConnect plugin is listening on. 127.0.0.1 by default.")
+    val ankiConnectHost by option("-h",
+                                  "--host",
+                                  help = "The hostname where AnkiConnect plugin is listening on. 127.0.0.1 by default.")
             .default("127.0.0.1")
-    val ankiConnectPort by option("-p", "--port", help = "The port number where AnkiConnect plugin is listening on. 8765 by default.", )
+    val ankiConnectPort by option(
+        "-p",
+        "--port",
+        help = "The port number where AnkiConnect plugin is listening on. 8765 by default.",
+    )
             .int().default(8765)
 
     val file by argument("file", help = "The file that contains the vocabulary to be added to Anki.")
@@ -44,11 +51,22 @@ class Kanjitomo2AnkiCommand : CliktCommand() {
             e.printStackTrace(System.err)
             return@runBlocking
         }
+
+        println("Creating model...")
+        val modelCreationResult = ankiClient.createModel(AnkiModel(KANJITOMO2ANKI_MODEL_NAME))
+        if (modelCreationResult.error == null) println("Kanjitomo2anki model created successfully")
+        else println("Model already exists! (${modelCreationResult.error})")
+
         words.forEach { word ->
             try {
-                ankiClient.createNote(AnkiNote(deckName, fields = mapOf(
-                    "Front" to word.kanji,
+                /*ankiClient.createNote(AnkiNote(deckName, fields = mapOf(
+                    "Front" to "<h1>${word.kanji}</h1>",
                     "Back" to "${word.kana}\n\n${word.meaning}"
+                )))*/
+                ankiClient.createNote(AnkiNote(deckName, modelName = KANJITOMO2ANKI_MODEL_NAME, fields = mapOf(
+                    "Kanji" to word.kanji,
+                    "Kana" to word.kana,
+                    "Meaning" to word.meaning
                 )))
                 println("Created new Anki card for ${word.kanji}.")
             } catch (e: AnkiException) {
@@ -65,6 +83,7 @@ class Kanjitomo2AnkiCommand : CliktCommand() {
     private fun String.fileName() = """^.*/|\.[^.]+$""".toRegex().replace(this, "")
 
     companion object {
+        private const val KANJITOMO2ANKI_MODEL_NAME = "kanjitomo2anki model"
         private val logger: Logger = LoggerFactory.getLogger(Kanjitomo2AnkiCommand::class.java)
     }
 }
