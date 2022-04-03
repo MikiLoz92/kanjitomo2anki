@@ -66,7 +66,7 @@ class Kanjitomo2AnkiCommand : CliktCommand() {
                 ankiClient.createNote(AnkiNote(deckName, modelName = KANJITOMO2ANKI_MODEL_NAME, fields = mapOf(
                     "Kanji" to word.kanji,
                     "Kana" to word.kana,
-                    "Meaning" to word.meaning
+                    "Meaning" to word.meaning.replace("\n", "<br>")
                 )))
                 println("Created new Anki card for ${word.kanji}.")
             } catch (e: AnkiException) {
